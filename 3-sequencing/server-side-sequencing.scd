@@ -62,3 +62,70 @@ LPF.ar(Saw.ar(Select.kr(Stepper.kr(Impulse.kr(MouseX.kr(1, 40), 0.1), 0, 0, 7, 1
 	[source, trigger]
 }.plot(0.2)
 )
+
+// Grabs a sin osc and holds it
+(
+{
+	Latch.ar(SinOsc.ar(1000),Impulse.ar(100));
+}.plot(0.5);
+)
+
+// Grabs noise and samples
+
+(
+{
+	Latch.ar(LFNoise0.ar(100), Impulse.ar(100));
+}.plot(0.1);
+)
+
+
+(
+{
+	SinOsc.ar(300+(200*Latch.ar(SinOsc.ar(13.3), Impulse.ar(10))))*0.2
+}.play
+)
+
+//Non sustaining envelopes
+
+(
+{
+	EnvGen.ar(Env([0,1,0], [0.01, 0.01]), Impulse.kr(50));
+}.plot(0.1)
+)
+
+// If you set this envelope carefully, could be used like a flexible stepper
+
+(
+{
+	EnvGen.ar(Env([0,1,0,0.5, -0.4], 0.01!4), Impulse.kr(25))
+}.plot(0.1)
+)
+
+// Use midicps on output to get scales
+
+(
+{
+	SinOsc.ar(
+		EnvGen.ar(
+			Env([63, 63, 60, 55, 60], 0.125!4, curve: \step),
+			Impulse.kr(2)
+		).midicps
+	)
+}.play
+)
+
+// Percussive sound retriggered 3 times per second
+
+(
+{
+	var sound, env, trig;
+
+	trig = Impulse.ar(3); // trigger source
+
+	sound = Mix(LFPulse.ar(110 * [1, 5/2], 0.0, 0.5, 0.2));
+
+	env = EnvGen.ar(Env.perc(0.02, 0.2), trig); //with retriggering controlled by impulse
+
+	Pan2.ar(sound * env, 0.0)
+}.play
+)
