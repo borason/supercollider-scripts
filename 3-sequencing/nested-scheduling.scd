@@ -73,3 +73,87 @@ var t = TempoClock(2.5);
 	}
 }.fork(t);
 )
+
+(
+var t = TempoClock(2);
+{
+	4.do{
+		"bar".postln;
+		{
+			[1.0,1.0,0.5,0.5,0.5,0.25,0.25].do{|val|Synth(\event, [\freq.rrand(48, 84).midicps, \amp, rrand(0.0, 0.3)]);
+
+				"event".postIn; val.wait;};
+
+		}.fork(t);
+		4.0.wait;
+	}
+}
+)
+
+
+(
+{
+	SynthDef(\bleep,{ arg out=0, note=60, amp=0.5, pan=0.0;
+		var freq, env;
+		freq = note.midicps;
+		env = EnvGen.ar(
+		Env([0,1,1,0],[0.01, 0.1, 0.2]),
+		levelScale:amp,
+		doneAction:2
+		);
+		Out.ar(out,
+		Pan2.ar(Blip.ar(freq) * env, pan)
+		)
+	}).add;
+	SynthDef(\bleep2,{ arg out=0, note=60, amp=0.5, pan=0.0;
+		var freq, env;
+		freq = note.midicps;
+		env = EnvGen.ar(
+		Env([0,1,1,0],[0.1, 0.1, 0.02]),
+		levelScale:amp,
+		doneAction:2
+		);
+		Out.ar(out,
+		Pan2.ar(Blip.ar(freq, Line.kr(10,1,1)) * env, pan)
+		)
+	}).add;
+	SynthDef(\mlpitch,{
+		var soundin, amp, freq, hasFreq;
+		soundin= SoundIn.ar;
+		amp= Amplitude.kr(soundin);
+		#freq, hasFreq= Pitch.kr(soundin);
+		Out.ar(0,amp*SinOsc.ar(freq))
+	}).add;
+	s.sync;  //won't proceed until server confirms it has the SynthDefs ready
+
+	//make buffers;
+	//s.sync;
+	//three sections
+	//1.
+	10.do{|i|
+		Synth([\bleep, \bleep2].choose);
+		0.15.wait;
+	};
+	1.0.wait;
+	//2.
+	a= Synth(\mlpitch);
+	1.0.wait;
+	a.free;
+	1.0.wait;
+	//3. two sequences of actions happen simultaneously (note no gap between the two)
+	{
+		100.do{|i|
+			Synth([\bleep, \bleep2].choose,[\note, ([60,62,64,66,67,69,71]-12).choose]);
+			rrand(0.05,0.15).wait;
+		};
+	}.fork;
+	//though process has just been forked off, straight to do further things in this thread too!
+	100.do{|i|
+		Synth([\bleep, \bleep2].choose,[\note, [60,62,64,66,67,69,71].choose]);
+		0.1.wait;
+	};
+
+}.fork;
+)
+
+ 
